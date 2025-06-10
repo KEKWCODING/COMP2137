@@ -26,6 +26,17 @@ gateway=$(ip r | awk '/default/ {print $3}') # ip r shows inthe routing table, a
 
 dns=$(resolvectl status | grep 'DNS Servers' | awk '{print $3}') #resolvectl status displays the dns servers, grep 'DNS Servers' filters the DNS Servers line, awk '{print $3}' displays the 3rd word in the line.
 
+users=$(who | awk '{print $1}' | sort | uniq | paste -sd,) #who shows who is  currently logged into the system. awk '{print $1}' extracts the first column from each line of the who output. sort, sorts the name alphabetically. uniq removes duplicates. paste -sd, joins all lines into a single line using a comma as the seperator. 
+
+diskspace=$(df -h --output=target,avail | grep -v 'Mounted' | awk '{print $1 " " $2}' | xargs -n2 | sed 's/^/ - /') #df displays disk pace usage for mounted filesystems. -h makes the output human readable for eg KB, MB, GB. --output=target,avail specifies that only the target (mount point) and available space columns should be shound in the output. grep searchs for lines matching a pattern. -v invert the match(so it excludes lines that match the pattern) 'Mounted' is the keyword we want to exclude from the output. awk text processing, {print $1 "" $2} tells awk to print the first field and the second field with a space between them. xargs reads items from input and executes a command for each item. -n2 tells xargs to process two items at a time(so it will take each line of input, which has two words: the mount point and the available spaces). sed a stream editor used for text tranformation. 's/^/ - /' this sed command adds a " - " at the beginning of each lonne and the ^ refers to the beginning of the line.
+
+processcount=$(ps ax --no-heading | wc -l) #ps is a command to list running processes. a shows processes from all users. x shows process not attached to a terminal (like background services) --no-heading tells ps too omit the header line, this is important because we want tot count only the process lines not the title row. wc counts words -l counts the number of lines in the input.
+
+loadavg=$(uptime | awk -F 'load average: ' '{print $2}') #uptime shows how long the system has been running, how many users are loggin in and the systems load averages. awk extracts data, -F'load average: ' sets the field delimiter to the text 'load average' that is it splits the line using this as a boundary. {print $2} tells awk to print the second part of the line, everything after 'load average: '.
+
+listeningports=$(ss -tuln | awk '/LISTEN/ {print $5}' | awk -F: '{print $NF}' | sort -n | uniq | paste -sd,) #ss shows sockets statistics -tuln shows TCP, UDP, listening sockets only, raw port numbers, dont resolve names. awk '/LISTEN/ filters lines with the word LISTEN, {print $5} prints the 5th column which is the local address:Port field. awk -F: '{print $NF}' uses : as the delimited, and print $NF prints the last field whih is the port number. sort -n sorts the ports numerically, uniq removes duplicates, paste -sd, joins all linnes into a single comman-separated string.
+
+ufwstatus=$(sudo ufw status 2>/dev/null | head -n 1 | awk '{print $2}') #ufw is a tool for managing the linux firewall, status shows whether the firewall is active or inactive. sudo is required because firewall operations need root privileges. 2>/dev/null redirects an errors messages so essentially suppressing them. this is useful in case ufw is not installed or the user doesnt have perms. head -n 1 takes only the first line of the ufw status output.
 
 
 
@@ -48,12 +59,12 @@ DNS Server: $dns
  
 System Status
 -------------
-Users Logged In: USER,USER,USER...
-Disk Space: FREE SPACE FOR LOCAL FILESYSTEMS IN FORMAT: /MOUNTPOINT N
-Process Count: N
-Load Averages: N, N, N
-Listening Network Ports: N, N, N, ...
-UFW Status: UFWSTATUS
+Users Logged In: $users
+Disk Space: $diskspace
+Process Count: $processcount
+Load Averages: $loadavg
+Listening Network Ports: $listeningports
+UFW Status: $ufwstatus
 
 
 EOF
