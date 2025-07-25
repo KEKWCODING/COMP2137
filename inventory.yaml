@@ -1,0 +1,7 @@
+groups:
+  - name: servers
+    targets:
+      - server1-mgmt
+      - server2-mgmt
+    config:
+      transport: ssh
